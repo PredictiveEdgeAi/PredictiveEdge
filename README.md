@@ -1,5 +1,5 @@
 # PredictiveEdge
 
 
-help predict outcome on basis of data from kaggle
+help predict outcome on basis of data from kaggle 
 
