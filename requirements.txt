@@ -1,0 +1,14 @@
+pandas
+numpy
+scikit-learn
+xgboost
+lightgbm
+fastapi
+uvicorn
+sqlalchemy
+requests
+basketball-reference-scraper
+python-dotenv
+joblib
+sqlite-utils
+

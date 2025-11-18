@@ -1,7 +1,63 @@
+# Python
 __pycache__/
-*.pyc
-backend/venv/
-frontend/node_modules/
-frontend/.next/
-frontend/.turbo/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment
 .env
+.venv
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Model artifacts
+model_artifacts/
+*.joblib
+*.pkl
+*.h5
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+data/*.db
+data/*.csv
+!data/historical_odds.csv.example
+data/Kaggle Datasets/
+
+# Logs
+*.log
