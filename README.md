@@ -1,6 +1,6 @@
 # PredictiveEdge - NBA Game Prediction System
 
-A comprehensive machine learning system for predicting NBA game outcomes with a focus on profitability through value betting.
+A comprehensive machine learning system for predicting NBA game outcomes with a focus on profitability through value betting. This system helps predict outcomes based on data from Kaggle on basketball.
 
 ## Features
 
