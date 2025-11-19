@@ -14,11 +14,14 @@ export default function HomePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const prediction = await getPrediction({
-      feature1: parseFloat(input.feature1),
-      feature2: parseFloat(input.feature2),
+      teamPointsPerGame: parseFloat(input.feature1),
+      opponentPointsPerGame: parseFloat(input.feature2),
+      fieldGoalPercentage: 0,
+      threePointPercentage: 0,
+      reboundsPerGame: 0,
+      assistsPerGame: 0,
     });
     setResult(prediction);
-  };
 
   return (
     <main style={{ padding: "2rem", fontFamily: "Arial" }}>
@@ -44,4 +47,4 @@ export default function HomePage() {
     </main>
   );
 }
-
+}

@@ -1,0 +1,910 @@
+/* ============================================
+   BASKETBALL LOADING SCREEN
+   ============================================ */
+
+.loadingScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(ellipse at center, #0a0a0a 0%, #1a1a2e 50%, #000000 100%),
+    radial-gradient(circle at 30% 30%, rgba(255, 140, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(255, 140, 0, 0.08) 0%, transparent 50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: fadeOut 0.8s ease-out forwards;
+  animation-delay: 2.5s;
+  opacity: 1;
+}
+
+.loadingScreen.hidden {
+  display: none;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Animated Background Particles */
+.loadingScreen::before {
+  content: "";
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 140, 0, 0.03) 2px,
+      rgba(255, 140, 0, 0.03) 4px
+    );
+  animation: gridMove 20s linear infinite;
+  pointer-events: none;
+}
+
+.loadingScreen::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.5) 100%);
+  pointer-events: none;
+}
+
+@keyframes gridMove {
+  from { transform: translate(0, 0); }
+  to { transform: translate(50px, 50px); }
+}
+
+/* Main Container */
+.loadingContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* Basketball 3D Rolling Animation */
+.basketballContainer {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 3rem;
+  perspective: 2000px;
+  perspective-origin: center center;
+}
+
+.basketball3D {
+  width: 150px;
+  height: 150px;
+  position: relative;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  animation: rollBasketball3D 4s linear infinite;
+  transform-origin: center center;
+  -webkit-transform-origin: center center;
+}
+
+/* True 3D Basketball Sphere - Single Element Approach */
+.basketballSphere {
+  width: 150px;
+  height: 150px;
+  position: relative;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  animation: rotateSphere3D 4s linear infinite;
+}
+
+/* Outer sphere with 3D lighting - True 3D Effect */
+.basketballOuter {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: 
+    /* Light source from top-left */
+    radial-gradient(circle at 30% 30%, 
+      rgba(255, 220, 150, 1) 0%,
+      rgba(255, 200, 120, 0.95) 5%,
+      #ff8c00 15%,
+      #ff7700 35%,
+      #ff8c00 55%,
+      #ff6600 75%,
+      #cc7000 90%,
+      #994d00 100%
+    ),
+    /* Shadow from bottom-right */
+    radial-gradient(circle at 75% 75%,
+      transparent 0%,
+      transparent 25%,
+      rgba(0, 0, 0, 0.1) 45%,
+      rgba(0, 0, 0, 0.3) 60%,
+      rgba(0, 0, 0, 0.5) 75%,
+      rgba(0, 0, 0, 0.7) 90%,
+      rgba(0, 0, 0, 0.9) 100%
+    );
+  box-shadow: 
+    /* Inner shadows for depth */
+    inset -50px -50px 100px rgba(0, 0, 0, 0.9),
+    inset 50px 50px 100px rgba(255, 255, 255, 0.4),
+    /* Outer glow */
+    0 0 100px rgba(255, 140, 0, 1),
+    0 40px 150px rgba(0, 0, 0, 1);
+  border: 6px solid #000;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  animation: outerSphereRotate 4s linear infinite;
+}
+
+@keyframes outerSphereRotate {
+  0% {
+    transform: rotate3d(1, 1, 0, 0deg);
+    -webkit-transform: rotate3d(1, 1, 0, 0deg);
+  }
+  100% {
+    transform: rotate3d(1, 1, 0, 360deg);
+    -webkit-transform: rotate3d(1, 1, 0, 360deg);
+  }
+}
+
+/* Add pseudo-elements for more 3D depth */
+.basketballOuter::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 25% 25%, 
+    rgba(255, 255, 255, 0.4) 0%,
+    transparent 50%
+  );
+  top: 0;
+  left: 0;
+  transform: translateZ(10px);
+  pointer-events: none;
+  animation: highlightRotate 4s linear infinite;
+}
+
+.basketballOuter::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 75% 75%, 
+    rgba(0, 0, 0, 0.6) 0%,
+    transparent 50%
+  );
+  top: 0;
+  left: 0;
+  transform: translateZ(-10px);
+  pointer-events: none;
+  animation: shadowRotate 4s linear infinite;
+}
+
+@keyframes highlightRotate {
+  0% {
+    transform: translateZ(10px) rotateZ(0deg);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translateZ(10px) rotateZ(90deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateZ(10px) rotateZ(180deg);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateZ(10px) rotateZ(270deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateZ(10px) rotateZ(360deg);
+    opacity: 0.6;
+  }
+}
+
+/* Inner sphere with pattern - positioned on surface */
+.basketballInner {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform: translateZ(3px);
+  -webkit-transform: translateZ(3px);
+  z-index: 2;
+}
+
+.basketballPattern {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+}
+
+/* Basketball Lines - 3D Perspective */
+.ballLineVertical {
+  position: absolute;
+  left: 50%;
+  top: 5%;
+  width: 5px;
+  height: 90%;
+  background: #000;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  box-shadow: 
+    0 0 10px rgba(0, 0, 0, 0.9),
+    inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.ballLineHorizontal {
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  width: 90%;
+  height: 5px;
+  background: #000;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  box-shadow: 
+    0 0 10px rgba(0, 0, 0, 0.9),
+    inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Curved Lines with 3D effect */
+.ballCurve1,
+.ballCurve2,
+.ballCurve3,
+.ballCurve4 {
+  position: absolute;
+  width: 70%;
+  height: 5px;
+  background: #000;
+  border-radius: 50px;
+  box-shadow: 
+    0 0 10px rgba(0, 0, 0, 0.9),
+    inset 0 0 5px rgba(0, 0, 0, 0.5);
+  left: 50%;
+  transform-origin: center;
+}
+
+.ballCurve1 {
+  top: 12%;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 50px 50px 0 0;
+  clip-path: ellipse(70% 50% at 50% 0%);
+}
+
+.ballCurve2 {
+  bottom: 12%;
+  transform: translateX(-50%) rotate(-45deg);
+  border-radius: 0 0 50px 50px;
+  clip-path: ellipse(70% 50% at 50% 100%);
+}
+
+.ballCurve3 {
+  top: 12%;
+  transform: translateX(-50%) rotate(-45deg);
+  border-radius: 50px 50px 0 0;
+  clip-path: ellipse(70% 50% at 50% 0%);
+}
+
+.ballCurve4 {
+  bottom: 12%;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 0 0 50px 50px;
+  clip-path: ellipse(70% 50% at 50% 100%);
+}
+
+/* 3D Highlight Effect */
+.basketballHighlight {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  top: 15%;
+  left: 20%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, transparent 70%);
+  filter: blur(15px);
+  animation: highlightMove 4s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes highlightMove {
+  0% {
+    transform: rotateZ(0deg) translateX(0px) translateY(0px);
+    opacity: 0.8;
+  }
+  25% {
+    transform: rotateZ(90deg) translateX(20px) translateY(-10px);
+    opacity: 1;
+  }
+  50% {
+    transform: rotateZ(180deg) translateX(0px) translateY(-20px);
+    opacity: 0.8;
+  }
+  75% {
+    transform: rotateZ(270deg) translateX(-20px) translateY(-10px);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateZ(360deg) translateX(0px) translateY(0px);
+    opacity: 0.8;
+  }
+}
+
+/* Shadow Overlay for depth */
+.basketballShadowOverlay {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 70% 70%, 
+    transparent 0%,
+    transparent 30%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.6) 70%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  pointer-events: none;
+  z-index: 5;
+  animation: shadowRotate 4s linear infinite;
+}
+
+@keyframes shadowRotate {
+  0% {
+    transform: rotateZ(0deg);
+  }
+  100% {
+    transform: rotateZ(360deg);
+  }
+}
+
+/* 3D Rotation Animation - True 3D Rolling with Perspective */
+@keyframes rollBasketball3D {
+  0% {
+    transform: rotate3d(1, 1, 0, 0deg);
+    -webkit-transform: rotate3d(1, 1, 0, 0deg);
+  }
+  25% {
+    transform: rotate3d(1, 1, 0, 90deg);
+    -webkit-transform: rotate3d(1, 1, 0, 90deg);
+  }
+  50% {
+    transform: rotate3d(1, 1, 0, 180deg);
+    -webkit-transform: rotate3d(1, 1, 0, 180deg);
+  }
+  75% {
+    transform: rotate3d(1, 1, 0, 270deg);
+    -webkit-transform: rotate3d(1, 1, 0, 270deg);
+  }
+  100% {
+    transform: rotate3d(1, 1, 0, 360deg);
+    -webkit-transform: rotate3d(1, 1, 0, 360deg);
+  }
+}
+
+/* True 3D Sphere Rotation - Multi-axis continuous rolling */
+@keyframes rotateSphere3D {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+    -webkit-transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  }
+  16.66% {
+    transform: rotateX(90deg) rotateY(60deg) rotateZ(0deg);
+    -webkit-transform: rotateX(90deg) rotateY(60deg) rotateZ(0deg);
+  }
+  33.33% {
+    transform: rotateX(180deg) rotateY(120deg) rotateZ(0deg);
+    -webkit-transform: rotateX(180deg) rotateY(120deg) rotateZ(0deg);
+  }
+  50% {
+    transform: rotateX(270deg) rotateY(180deg) rotateZ(0deg);
+    -webkit-transform: rotateX(270deg) rotateY(180deg) rotateZ(0deg);
+  }
+  66.66% {
+    transform: rotateX(360deg) rotateY(240deg) rotateZ(0deg);
+    -webkit-transform: rotateX(360deg) rotateY(240deg) rotateZ(0deg);
+  }
+  83.33% {
+    transform: rotateX(450deg) rotateY(300deg) rotateZ(0deg);
+    -webkit-transform: rotateX(450deg) rotateY(300deg) rotateZ(0deg);
+  }
+  100% {
+    transform: rotateX(720deg) rotateY(360deg) rotateZ(0deg);
+    -webkit-transform: rotateX(720deg) rotateY(360deg) rotateZ(0deg);
+  }
+}
+
+/* Enhanced 3D appearance with perspective */
+.basketball3D {
+  filter: drop-shadow(0 0 50px rgba(255, 140, 0, 0.9)) 
+          drop-shadow(0 20px 80px rgba(0, 0, 0, 0.8));
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-origin: center center;
+  -webkit-transform-origin: center center;
+}
+
+/* Basketball Shadow */
+.basketballShadow {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 25px;
+  background: radial-gradient(ellipse, rgba(255, 140, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 40%, transparent 70%);
+  border-radius: 50%;
+  animation: shadowPulse 1.5s ease-in-out infinite;
+  filter: blur(15px);
+  z-index: -1;
+}
+
+@keyframes shadowPulse {
+  0%, 100% {
+    width: 120px;
+    opacity: 0.5;
+  }
+  50% {
+    width: 140px;
+    opacity: 0.8;
+  }
+}
+
+/* Dynamic Particles Around Ball */
+.particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #ff8c00;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ff8c00, 0 0 20px #ff8c00;
+  animation: particleFloat 3s ease-in-out infinite;
+}
+
+.particle:nth-child(1) {
+  top: 10%;
+  left: 20%;
+  animation-delay: 0s;
+  animation-duration: 2.5s;
+}
+
+.particle:nth-child(2) {
+  top: 20%;
+  right: 15%;
+  animation-delay: 0.5s;
+  animation-duration: 3s;
+}
+
+.particle:nth-child(3) {
+  bottom: 15%;
+  left: 25%;
+  animation-delay: 1s;
+  animation-duration: 2.8s;
+}
+
+.particle:nth-child(4) {
+  bottom: 25%;
+  right: 20%;
+  animation-delay: 1.5s;
+  animation-duration: 3.2s;
+}
+
+.particle:nth-child(5) {
+  top: 50%;
+  left: 10%;
+  animation-delay: 0.3s;
+  animation-duration: 2.7s;
+}
+
+.particle:nth-child(6) {
+  top: 60%;
+  right: 10%;
+  animation-delay: 1.2s;
+  animation-duration: 3.1s;
+}
+
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.2);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-15px, -50px) scale(0.8);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translate(25px, -30px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* Light Streaks */
+.lightStreaks {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.lightStreak {
+  position: absolute;
+  width: 2px;
+  height: 100px;
+  background: linear-gradient(180deg, transparent 0%, rgba(255, 140, 0, 0.8) 50%, transparent 100%);
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.6);
+  animation: streakMove 2s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+.lightStreak:nth-child(1) {
+  top: 20%;
+  left: 15%;
+  animation-delay: 0s;
+  animation-duration: 2s;
+  transform: rotate(45deg);
+}
+
+.lightStreak:nth-child(2) {
+  top: 40%;
+  right: 20%;
+  animation-delay: 0.7s;
+  animation-duration: 2.3s;
+  transform: rotate(-45deg);
+}
+
+.lightStreak:nth-child(3) {
+  bottom: 30%;
+  left: 20%;
+  animation-delay: 1.4s;
+  animation-duration: 2.1s;
+  transform: rotate(135deg);
+}
+
+.lightStreak:nth-child(4) {
+  bottom: 20%;
+  right: 15%;
+  animation-delay: 0.5s;
+  animation-duration: 2.5s;
+  transform: rotate(-135deg);
+}
+
+@keyframes streakMove {
+  0%, 100% {
+    transform: translate(0, 0) rotate(var(--rotation, 45deg)) scaleY(1);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(30px, -30px) rotate(var(--rotation, 45deg)) scaleY(1.5);
+    opacity: 0.8;
+  }
+}
+
+/* Circular Progress Ring */
+.progressRing {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.progressRingSVG {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progressRingBackground {
+  fill: none;
+  stroke: rgba(255, 140, 0, 0.1);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.progressRingForeground {
+  fill: none;
+  stroke: url(#progressGradient);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 628.32;
+  stroke-dashoffset: 628.32;
+  animation: progressFill 2.5s ease-out forwards;
+  filter: drop-shadow(0 0 10px rgba(255, 140, 0, 0.8));
+}
+
+@keyframes progressFill {
+  from {
+    stroke-dashoffset: 628.32;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.progressGradient {
+  --x1: 0%;
+  --y1: 0%;
+  --x2: 100%;
+  --y2: 100%;
+}
+
+.progressGradient stop:first-child {
+  stop-color: #ff8c00;
+  stop-opacity: 1;
+}
+
+.progressGradient stop:last-child {
+  stop-color: #ff6b35;
+  stop-opacity: 1;
+}
+
+/* Glowing Ring Pulse */
+.progressGlow {
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(255, 140, 0, 0.3);
+  border-radius: 50%;
+  animation: ringPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ringPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.6;
+  }
+}
+
+/* Loading Text */
+.loadingText {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.loadingTitle {
+  font-size: 2rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff8c00 0%, #ff6b35 50%, #ff8c00 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: textShimmer 2s linear infinite, fadeIn 0.8s ease-out;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.6));
+}
+
+@keyframes textShimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loadingSubtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+  animation: fadeIn 1s ease-out;
+  animation-delay: 0.3s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+/* Percentage Display */
+.percentageDisplay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #ff8c00;
+  text-shadow: 
+    0 0 20px rgba(255, 140, 0, 0.8),
+    0 0 40px rgba(255, 140, 0, 0.5);
+  animation: numberCount 2.5s ease-out forwards;
+  z-index: 5;
+}
+
+@keyframes numberCount {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Neon Edge Lights */
+.neonEdges {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.neonEdge {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(255, 140, 0, 0.4), transparent);
+  animation: edgeGlow 3s ease-in-out infinite;
+}
+
+.neonEdgeTop {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  animation-delay: 0s;
+}
+
+.neonEdgeBottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  animation-delay: 1.5s;
+}
+
+.neonEdgeLeft {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  animation-delay: 0.75s;
+}
+
+.neonEdgeRight {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  animation-delay: 2.25s;
+}
+
+@keyframes edgeGlow {
+  0%, 100% {
+    opacity: 0.3;
+    box-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 30px rgba(255, 140, 0, 0.8);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .basketballContainer {
+    width: 150px;
+    height: 150px;
+  }
+
+  .basketball3D {
+    width: 120px;
+    height: 120px;
+    font-size: 120px;
+    line-height: 120px;
+  }
+
+  .progressRing {
+    width: 180px;
+    height: 180px;
+  }
+
+  .progressGlow {
+    width: 190px;
+    height: 190px;
+  }
+
+  .loadingTitle {
+    font-size: 1.5rem;
+  }
+
+  .loadingSubtitle {
+    font-size: 0.85rem;
+  }
+
+  .percentageDisplay {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .basketballContainer {
+    width: 120px;
+    height: 120px;
+  }
+
+  .basketball3D {
+    width: 100px;
+    height: 100px;
+    font-size: 100px;
+    line-height: 100px;
+  }
+
+  .progressRing {
+    width: 150px;
+    height: 150px;
+  }
+
+  .progressGlow {
+    width: 160px;
+    height: 160px;
+  }
+
+  .loadingTitle {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+  }
+}
+
