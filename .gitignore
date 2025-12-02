@@ -36,6 +36,7 @@ wheels/
 model_artifacts/
 *.joblib
 *.pkl
+!notebooks/*.pkl
 *.h5
 
 # Jupyter
