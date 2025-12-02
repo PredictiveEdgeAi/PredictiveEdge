@@ -63,7 +63,8 @@ def analyze_csv_file(file_path):
 
 def generate_report():
     """Generate comprehensive report on all Kaggle datasets."""
-    base_path = Path("data/Kaggle Datasets")
+    # Update path to be relative to project root (one level up from scripts/)
+    base_path = Path(__file__).parent.parent / "data" / "Kaggle Datasets"
     
     # Find all CSV files
     csv_files = []

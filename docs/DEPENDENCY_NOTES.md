@@ -55,4 +55,3 @@ python -c "import fastapi, pandas, numpy, sklearn, xgboost, lightgbm, sqlalchemy
 
 If this runs without errors, you're good to go! 🏀
 
-
