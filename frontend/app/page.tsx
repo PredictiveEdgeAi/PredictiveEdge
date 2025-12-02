@@ -1,109 +1,85 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { getPrediction } from "../src/api/predict";
-import { teams, Team, Player, getTeamById } from "../src/data/teams";
-import { calculateTeamStatsFromPlayers } from "../src/utils/calculations";
+import { getTeams, Team } from "../src/api/teams";
 import LoadingScreen from "./loading";
 import ThemedSelect from "./components/ThemedSelect";
 import styles from "./page.module.css";
 
 export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [teamA, setTeamA] = useState<string>("");
   const [teamB, setTeamB] = useState<string>("");
-  const [teamAPlayers, setTeamAPlayers] = useState<string[]>([]);
-  const [teamBPlayers, setTeamBPlayers] = useState<string[]>([]);
   const [result, setResult] = useState<string | null>(null);
+  const [homeWinProbability, setHomeWinProbability] = useState<number | null>(null);
+  const [awayWinProbability, setAwayWinProbability] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [winProbability, setWinProbability] = useState<number | null>(null);
 
-  const selectedTeamA = getTeamById(teamA);
-  const selectedTeamB = getTeamById(teamB);
-
-  const teamAStats = useMemo(() => {
-    if (!selectedTeamA || teamAPlayers.length === 0) return null;
-    const selectedPlayers = selectedTeamA.players.filter(p => teamAPlayers.includes(p.id));
-    return calculateTeamStatsFromPlayers(selectedPlayers);
-  }, [selectedTeamA, teamAPlayers]);
-
-  const teamBStats = useMemo(() => {
-    if (!selectedTeamB || teamBPlayers.length === 0) return null;
-    const selectedPlayers = selectedTeamB.players.filter(p => teamBPlayers.includes(p.id));
-    return calculateTeamStatsFromPlayers(selectedPlayers);
-  }, [selectedTeamB, teamBPlayers]);
-
-  // Calculate win probability based on stats
+  // Fetch teams from API on component mount
   useEffect(() => {
-    if (teamAStats && teamBStats) {
-      const totalPoints = teamAStats.pointsPerGame + teamBStats.pointsPerGame;
-      const teamAProb = totalPoints > 0 ? (teamAStats.pointsPerGame / totalPoints) * 100 : 50;
-      setWinProbability(Math.round(teamAProb));
-    } else {
-      setWinProbability(null);
-    }
-  }, [teamAStats, teamBStats]);
+    const fetchTeams = async () => {
+      try {
+        const fetchedTeams = await getTeams();
+        setTeams(fetchedTeams);
+      } catch (error) {
+        console.error("Failed to fetch teams:", error);
+        // Fallback to empty array if API fails
+        setTeams([]);
+      }
+    };
+    fetchTeams();
+  }, []);
+
+  const selectedTeamA = teams.find(team => team.id === teamA);
+  const selectedTeamB = teams.find(team => team.id === teamB);
 
   const handleTeamAChange = (value: string) => {
     setTeamA(value);
-    setTeamAPlayers([]);
     setResult(null);
   };
 
   const handleTeamBChange = (value: string) => {
     setTeamB(value);
-    setTeamBPlayers([]);
-    setResult(null);
-  };
-
-  const toggleTeamAPlayer = (playerId: string) => {
-    setTeamAPlayers(prev => 
-      prev.includes(playerId) 
-        ? prev.filter(id => id !== playerId)
-        : [...prev, playerId]
-    );
-    setResult(null);
-  };
-
-  const toggleTeamBPlayer = (playerId: string) => {
-    setTeamBPlayers(prev => 
-      prev.includes(playerId) 
-        ? prev.filter(id => id !== playerId)
-        : [...prev, playerId]
-    );
     setResult(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!teamAStats || !teamBStats) {
-      alert("Please select players for both teams");
+    if (!selectedTeamA || !selectedTeamB) {
+      alert("Please select both teams");
       return;
     }
 
     setLoading(true);
     setResult(null);
+    setHomeWinProbability(null);
+    setAwayWinProbability(null);
     
     try {
-      const prediction = await getPrediction({
-        teamPointsPerGame: teamAStats.pointsPerGame,
-        opponentPointsPerGame: teamBStats.pointsPerGame,
-        fieldGoalPercentage: teamAStats.fieldGoalPercentage,
-        threePointPercentage: teamAStats.threePointPercentage,
-        reboundsPerGame: teamAStats.reboundsPerGame,
-        assistsPerGame: teamAStats.assistsPerGame,
+      // Use fullName from the API response (e.g., "Los Angeles Lakers")
+      const homeTeamName = selectedTeamA.fullName;
+      const awayTeamName = selectedTeamB.fullName;
+      
+      const response = await getPrediction({
+        home_team_name: homeTeamName,
+        away_team_name: awayTeamName,
       });
-      setResult(prediction);
+      setResult(response.prediction);
+      setHomeWinProbability(response.home_win_probability);
+      setAwayWinProbability(response.away_win_probability);
     } catch (error) {
       setResult("Error: Could not get analysis. Make sure the backend is running.");
+      setHomeWinProbability(null);
+      setAwayWinProbability(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const canAnalyze = teamA && teamB && teamAPlayers.length > 0 && teamBPlayers.length > 0;
+  const canAnalyze = teamA && teamB;
 
   return (
     <>
@@ -146,33 +122,6 @@ export default function HomePage() {
           <p className={styles.subtitle}>AI-Powered Basketball Analytics Platform</p>
         </div>
 
-        {/* LED Scoreboard Panel */}
-        {winProbability !== null && (
-          <div className={styles.ledScoreboard}>
-            <div className={styles.ledPanel}>
-              <div className={styles.ledHeader}>
-                <span className={styles.ledText}>WIN PROBABILITY</span>
-              </div>
-              <div className={styles.ledDisplay}>
-                <div className={styles.probabilityContainer}>
-                  <div className={styles.probabilityBar}>
-                    <div 
-                      className={styles.probabilityFill} 
-                      style={{ width: `${winProbability}%` }}
-                    >
-                      <span className={styles.probabilityText}>{winProbability}%</span>
-                    </div>
-                  </div>
-                  <div className={styles.teamLabels}>
-                    <span className={styles.teamLabel}>{selectedTeamA?.abbreviation || 'TEAM A'}</span>
-                    <span className={styles.teamLabel}>{selectedTeamB?.abbreviation || 'TEAM B'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Main Dashboard Card */}
         <div className={styles.dashboardCard}>
           <div className={styles.cardGlow}></div>
@@ -182,7 +131,7 @@ export default function HomePage() {
             Game Analysis Dashboard
           </h2>
           <p className={styles.cardDescription}>
-            Select teams and players to analyze performance metrics and model estimates
+            Select teams to analyze performance metrics and model estimates
           </p>
 
           <form onSubmit={handleSubmit} className={styles.form}>
@@ -235,190 +184,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Player Selection with Animated Cards */}
-            {(selectedTeamA || selectedTeamB) && (
-              <div className={styles.playerSelection}>
-                {selectedTeamA && (
-                  <div className={styles.playerGroup}>
-                    <div className={styles.playerGroupGlow}></div>
-                    <h3 className={styles.playerGroupTitle}>
-                      <span className={styles.teamIcon}>🏀</span>
-                      {selectedTeamA.city} {selectedTeamA.name}
-                    </h3>
-                    <div className={styles.playerList}>
-                      {selectedTeamA.players.map(player => (
-                        <label 
-                          key={player.id} 
-                          className={`${styles.playerCard} ${teamAPlayers.includes(player.id) ? styles.playerCardSelected : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={teamAPlayers.includes(player.id)}
-                            onChange={() => toggleTeamAPlayer(player.id)}
-                            className={styles.playerCheckbox}
-                          />
-                          <div className={styles.playerInfo}>
-                            <span className={styles.playerName}>{player.name}</span>
-                            <span className={styles.playerPosition}>{player.position}</span>
-                          </div>
-                          <div className={styles.playerStatsMini}>
-                            <span className={styles.statValue}>{player.pointsPerGame}</span>
-                            <span className={styles.statLabel}>PPG</span>
-                          </div>
-                          <div className={styles.playerCardGlow}></div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedTeamB && (
-                  <div className={styles.playerGroup}>
-                    <div className={styles.playerGroupGlow}></div>
-                    <h3 className={styles.playerGroupTitle}>
-                      <span className={styles.teamIcon}>🏀</span>
-                      {selectedTeamB.city} {selectedTeamB.name}
-                    </h3>
-                    <div className={styles.playerList}>
-                      {selectedTeamB.players.map(player => (
-                        <label 
-                          key={player.id} 
-                          className={`${styles.playerCard} ${teamBPlayers.includes(player.id) ? styles.playerCardSelected : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={teamBPlayers.includes(player.id)}
-                            onChange={() => toggleTeamBPlayer(player.id)}
-                            className={styles.playerCheckbox}
-                          />
-                          <div className={styles.playerInfo}>
-                            <span className={styles.playerName}>{player.name}</span>
-                            <span className={styles.playerPosition}>{player.position}</span>
-                          </div>
-                          <div className={styles.playerStatsMini}>
-                            <span className={styles.statValue}>{player.pointsPerGame}</span>
-                            <span className={styles.statLabel}>PPG</span>
-                          </div>
-                          <div className={styles.playerCardGlow}></div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Interactive Stats Preview with Animated Graphs */}
-            {(teamAStats || teamBStats) && (
-              <div className={styles.statsPreview}>
-                <button
-                  type="button"
-                  onClick={() => setShowStats(!showStats)}
-                  className={styles.showStatsButton}
-                >
-                  <span className={styles.buttonIcon}>{showStats ? '▼' : '▶'}</span>
-                  {showStats ? "Hide" : "Show"} Calculated Statistics
-                </button>
-                {showStats && (
-                  <div className={styles.statsGrid}>
-                    {teamAStats && (
-                      <div className={styles.statsCard}>
-                        <div className={styles.statsCardGlow}></div>
-                        <h4>{selectedTeamA?.city} {selectedTeamA?.name}</h4>
-                        <div className={styles.statRow}>
-                          <span>Points/Game</span>
-                          <div className={styles.statBarContainer}>
-                            <div 
-                              className={styles.statBarFill} 
-                              style={{ width: `${(teamAStats.pointsPerGame / 150) * 100}%` }}
-                            >
-                              <strong>{teamAStats.pointsPerGame.toFixed(1)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>Rebounds</span>
-                          <div className={styles.statBarContainer}>
-                            <div 
-                              className={styles.statBarFill} 
-                              style={{ width: `${(teamAStats.reboundsPerGame / 60) * 100}%` }}
-                            >
-                              <strong>{teamAStats.reboundsPerGame.toFixed(1)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>Assists</span>
-                          <div className={styles.statBarContainer}>
-                            <div 
-                              className={styles.statBarFill} 
-                              style={{ width: `${(teamAStats.assistsPerGame / 40) * 100}%` }}
-                            >
-                              <strong>{teamAStats.assistsPerGame.toFixed(1)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>FG%</span>
-                          <strong className={styles.percentageValue}>{teamAStats.fieldGoalPercentage}%</strong>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>3PT%</span>
-                          <strong className={styles.percentageValue}>{teamAStats.threePointPercentage}%</strong>
-                        </div>
-                      </div>
-                    )}
-                    {teamBStats && (
-                      <div className={styles.statsCard}>
-                        <div className={styles.statsCardGlow}></div>
-                        <h4>{selectedTeamB?.city} {selectedTeamB?.name}</h4>
-                        <div className={styles.statRow}>
-                          <span>Points/Game</span>
-                          <div className={styles.statBarContainer}>
-                            <div 
-                              className={styles.statBarFill} 
-                              style={{ width: `${(teamBStats.pointsPerGame / 150) * 100}%` }}
-                            >
-                              <strong>{teamBStats.pointsPerGame.toFixed(1)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>Rebounds</span>
-                          <div className={styles.statBarContainer}>
-                            <div 
-                              className={styles.statBarFill} 
-                              style={{ width: `${(teamBStats.reboundsPerGame / 60) * 100}%` }}
-                            >
-                              <strong>{teamBStats.reboundsPerGame.toFixed(1)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>Assists</span>
-                          <div className={styles.statBarContainer}>
-                            <div 
-                              className={styles.statBarFill} 
-                              style={{ width: `${(teamBStats.assistsPerGame / 40) * 100}%` }}
-                            >
-                              <strong>{teamBStats.assistsPerGame.toFixed(1)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>FG%</span>
-                          <strong className={styles.percentageValue}>{teamBStats.fieldGoalPercentage}%</strong>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span>3PT%</span>
-                          <strong className={styles.percentageValue}>{teamBStats.threePointPercentage}%</strong>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Animated Analyze Button */}
             <button 
@@ -442,9 +207,9 @@ export default function HomePage() {
               </span>
             </button>
             
-            {!canAnalyze && teamA && teamB && (
+            {!canAnalyze && (
               <p className={styles.helperText}>
-                Please select at least one player from each team to analyze
+                Please select both teams to analyze
               </p>
             )}
           </form>
@@ -454,18 +219,35 @@ export default function HomePage() {
             <div className={styles.predictionResult}>
               <div className={styles.resultGlow}></div>
               <div className={styles.resultIcon}>
-                {result === "Win" || result === "1" ? "🏆" : "📉"}
+                {result === "1" ? "🏆" : "📉"}
               </div>
               <div className={styles.resultLED}>
                 <span className={styles.resultLabel}>MODEL ESTIMATE</span>
-                <span className={`${styles.resultValue} ${result === "Win" || result === "1" ? styles.resultWin : styles.resultLoss}`}>
-                  {result === "Win" || result === "1" ? "FAVORED" : "UNDERDOG"}
+                <span className={`${styles.resultValue} ${result === "1" ? styles.resultWin : styles.resultLoss}`}>
+                  {result === "1" ? "FAVORED" : "UNDERDOG"}
                 </span>
               </div>
               <p className={styles.resultDescription}>
-                Based on the selected {selectedTeamA?.name} lineup, the analytical model estimates Team A has a{" "}
-                <strong>{result === "Win" || result === "1" ? "higher probability" : "lower probability"}</strong> of favorable performance against {selectedTeamB?.name} based on historical data patterns.
+                Based on the {selectedTeamA?.fullName} vs {selectedTeamB?.fullName} matchup, the analytical model estimates Team A ({selectedTeamA?.fullName}) has a{" "}
+                <strong>{result === "1" ? "higher probability" : "lower probability"}</strong> of favorable performance based on historical data patterns.
+                {result === "1" ? (
+                  <span> Team A is predicted to win.</span>
+                ) : (
+                  <span> Team A is predicted to lose.</span>
+                )}
               </p>
+              {homeWinProbability !== null && awayWinProbability !== null && (
+                <div className={styles.probabilityDisplay}>
+                  <div className={styles.probabilityItem}>
+                    <span className={styles.probabilityLabel}>Team A (Home) Win Probability:</span>
+                    <span className={styles.probabilityValue}>{homeWinProbability}%</span>
+                  </div>
+                  <div className={styles.probabilityItem}>
+                    <span className={styles.probabilityLabel}>Team B (Away) Win Probability:</span>
+                    <span className={styles.probabilityValue}>{awayWinProbability}%</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

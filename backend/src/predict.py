@@ -8,7 +8,7 @@ import joblib
 from pathlib import Path
 from sqlalchemy.orm import Session
 from src.database import get_session, Team, Game
-from src.config import MODEL_ARTIFACTS_DIR
+from src.config import MODEL_ARTIFACTS_DIR, DATA_DIR
 from src.feature_engineering import (
     get_rolling_averages, get_h2h_win_pct, get_days_rest,
     ELO_INITIAL
@@ -19,6 +19,7 @@ from datetime import datetime, date
 
 # Global model cache (loaded once, reused for all predictions)
 _model_cache = None
+_training_data_cache = None
 
 
 def load_model():
@@ -50,6 +51,137 @@ def load_model():
     
     # XGBoost models don't need a scaler
     return model, None
+
+
+def load_training_data():
+    """Load the training dataset CSV. Uses caching for performance."""
+    global _training_data_cache
+    
+    if _training_data_cache is not None:
+        return _training_data_cache
+    
+    training_data_path = DATA_DIR / "training_dataset_engineered.csv"
+    
+    if not training_data_path.exists():
+        raise FileNotFoundError(
+            f"Training dataset not found at {training_data_path}. "
+            f"Please ensure training_dataset_engineered.csv is in the data folder."
+        )
+    
+    print(f"Loading training dataset from {training_data_path}...")
+    df = pd.read_csv(training_data_path, parse_dates=['game_date'])
+    
+    # Cache the dataset
+    _training_data_cache = df
+    
+    return df
+
+
+def get_team_stats_from_training_data(team_name: str, training_df: pd.DataFrame, game_date: date = None):
+    """
+    Get the most recent team statistics from the training dataset.
+    
+    Args:
+        team_name: Name of the team
+        training_df: The training dataset DataFrame
+        game_date: Date to get stats before (defaults to today)
+    
+    Returns:
+        Dictionary with team statistics or None if not found
+    """
+    if game_date is None:
+        game_date = datetime.now().date()
+    
+    # Find most recent game where this team was team1 (with actual data)
+    team1_games = training_df[
+        (training_df['team1_name'] == team_name) &
+        (training_df['game_date'] < pd.Timestamp(game_date)) &
+        (training_df['team1_avg_pts_scored_l10'] > 0)  # Has actual data
+    ].sort_values('game_date', ascending=False)
+    
+    if len(team1_games) > 0:
+        latest_game = team1_games.iloc[0]
+        return {
+            'elo': float(latest_game['team1_elo']),
+            'offensive_rating': float(latest_game['team1_offensive_rating']),
+            'defensive_rating': float(latest_game['team1_defensive_rating']),
+            'avg_pts_scored_l10': float(latest_game['team1_avg_pts_scored_l10']),
+            'avg_pts_allowed_l10': float(latest_game['team1_avg_pts_allowed_l10']),
+            'avg_fg_pct_l10': float(latest_game['team1_avg_fg_pct_l10']),
+            'avg_rebounds_l10': float(latest_game['team1_avg_rebounds_l10']),
+            'avg_assists_l10': float(latest_game['team1_avg_assists_l10']),
+            'avg_tov_l10': float(latest_game['team1_avg_tov_l10']),
+            'avg_plus_minus_l10': float(latest_game['team1_avg_plus_minus_l10']),
+        }
+    
+    # Try team2
+    team2_games = training_df[
+        (training_df['team2_name'] == team_name) &
+        (training_df['game_date'] < pd.Timestamp(game_date)) &
+        (training_df['team2_avg_pts_scored_l10'] > 0)  # Has actual data
+    ].sort_values('game_date', ascending=False)
+    
+    if len(team2_games) > 0:
+        latest_game = team2_games.iloc[0]
+        return {
+            'elo': float(latest_game['team2_elo']),
+            'offensive_rating': float(latest_game['team2_offensive_rating']),
+            'defensive_rating': float(latest_game['team2_defensive_rating']),
+            'avg_pts_scored_l10': float(latest_game['team2_avg_pts_scored_l10']),
+            'avg_pts_allowed_l10': float(latest_game['team2_avg_pts_allowed_l10']),
+            'avg_fg_pct_l10': float(latest_game['team2_avg_fg_pct_l10']),
+            'avg_rebounds_l10': float(latest_game['team2_avg_rebounds_l10']),
+            'avg_assists_l10': float(latest_game['team2_avg_assists_l10']),
+            'avg_tov_l10': float(latest_game['team2_avg_tov_l10']),
+            'avg_plus_minus_l10': float(latest_game['team2_avg_plus_minus_l10']),
+        }
+    
+    return None
+
+
+def get_h2h_from_training_data(team1_name: str, team2_name: str, training_df: pd.DataFrame, game_date: date = None):
+    """
+    Get head-to-head win percentage from training data.
+    
+    Args:
+        team1_name: Name of team 1
+        team2_name: Name of team 2
+        training_df: The training dataset DataFrame
+        game_date: Date to get stats before (defaults to today)
+    
+    Returns:
+        Tuple of (team1_h2h_win_pct, team2_h2h_win_pct)
+    """
+    if game_date is None:
+        game_date = datetime.now().date()
+    
+    # Find games between these two teams before the game date
+    h2h_games = training_df[
+        (
+            ((training_df['team1_name'] == team1_name) & (training_df['team2_name'] == team2_name)) |
+            ((training_df['team1_name'] == team2_name) & (training_df['team2_name'] == team1_name))
+        ) &
+        (training_df['game_date'] < pd.Timestamp(game_date)) &
+        (training_df['team1_score'].notna()) &
+        (training_df['team2_score'].notna())
+    ]
+    
+    if len(h2h_games) == 0:
+        return 0.5, 0.5  # Default to 50% if no history
+    
+    team1_wins = 0
+    for _, game in h2h_games.iterrows():
+        if game['team1_name'] == team1_name:
+            if game['team1_won'] == 1:
+                team1_wins += 1
+        else:  # team1_name == team2_name
+            if game['team1_won'] == 0:  # team2 won (as team1)
+                team1_wins += 1
+    
+    team1_h2h = team1_wins / len(h2h_games) if len(h2h_games) > 0 else 0.5
+    team2_h2h = 1 - team1_h2h
+    
+    return team1_h2h, team2_h2h
 
 
 def get_team_by_name(db: Session, team_name: str) -> Team:
@@ -134,31 +266,85 @@ def generate_prediction(
         # Load model (XGBoost doesn't need scaler)
         model, _ = load_model()
         
-        # Get teams
-        home_team = get_team_by_name(db, home_team_name)
-        away_team = get_team_by_name(db, away_team_name)
+        # Load training dataset for historical data
+        training_df = load_training_data()
         
-        # Get current ELO ratings
-        home_elo = get_current_elo(db, home_team.team_id)
-        away_elo = get_current_elo(db, away_team.team_id)
+        # Get teams from database (for team_id if needed)
+        try:
+            home_team = get_team_by_name(db, home_team_name)
+            away_team = get_team_by_name(db, away_team_name)
+        except ValueError:
+            # If team not in database, use the name directly
+            home_team = type('Team', (), {'team_id': None, 'team_name': home_team_name})()
+            away_team = type('Team', (), {'team_id': None, 'team_name': away_team_name})()
         
-        # Get rolling averages
-        home_rolling = get_rolling_averages(db, home_team.team_id, game_date)
-        away_rolling = get_rolling_averages(db, away_team.team_id, game_date)
+        # Get team statistics from training dataset
+        home_stats = get_team_stats_from_training_data(home_team_name, training_df, game_date)
+        away_stats = get_team_stats_from_training_data(away_team_name, training_df, game_date)
         
-        # Get H2H
-        h2h_home = get_h2h_win_pct(db, home_team.team_id, away_team.team_id, game_date)
-        h2h_away = get_h2h_win_pct(db, away_team.team_id, home_team.team_id, game_date)
+        # Use training data if available, otherwise fall back to database/defaults
+        if home_stats:
+            home_elo = home_stats['elo']
+            home_offensive_rating = home_stats['offensive_rating']
+            home_defensive_rating = home_stats['defensive_rating']
+            home_rolling = {
+                'avg_pts_scored': home_stats['avg_pts_scored_l10'],
+                'avg_pts_allowed': home_stats['avg_pts_allowed_l10'],
+                'avg_fg_pct': home_stats['avg_fg_pct_l10'],
+                'avg_rebounds': home_stats['avg_rebounds_l10'],
+                'avg_assists': home_stats['avg_assists_l10'],
+                'avg_tov': home_stats['avg_tov_l10'],
+                'avg_plus_minus': home_stats['avg_plus_minus_l10'],
+            }
+        else:
+            # Fallback to database/defaults
+            if home_team.team_id:
+                home_elo = get_current_elo(db, home_team.team_id)
+                home_rolling = get_rolling_averages(db, home_team.team_id, game_date)
+            else:
+                home_elo = ELO_INITIAL
+                home_rolling = {'avg_pts_scored': 0, 'avg_pts_allowed': 0, 'avg_fg_pct': 0, 
+                               'avg_rebounds': 0, 'avg_assists': 0, 'avg_tov': 0, 'avg_plus_minus': 0}
+            home_offensive_rating = home_rolling.get('avg_pts_scored', 0)
+            home_defensive_rating = home_rolling.get('avg_pts_allowed', 0)
         
-        # Get rest days
-        home_rest = get_days_rest(db, home_team.team_id, game_date)
-        away_rest = get_days_rest(db, away_team.team_id, game_date)
+        if away_stats:
+            away_elo = away_stats['elo']
+            away_offensive_rating = away_stats['offensive_rating']
+            away_defensive_rating = away_stats['defensive_rating']
+            away_rolling = {
+                'avg_pts_scored': away_stats['avg_pts_scored_l10'],
+                'avg_pts_allowed': away_stats['avg_pts_allowed_l10'],
+                'avg_fg_pct': away_stats['avg_fg_pct_l10'],
+                'avg_rebounds': away_stats['avg_rebounds_l10'],
+                'avg_assists': away_stats['avg_assists_l10'],
+                'avg_tov': away_stats['avg_tov_l10'],
+                'avg_plus_minus': away_stats['avg_plus_minus_l10'],
+            }
+        else:
+            # Fallback to database/defaults
+            if away_team.team_id:
+                away_elo = get_current_elo(db, away_team.team_id)
+                away_rolling = get_rolling_averages(db, away_team.team_id, game_date)
+            else:
+                away_elo = ELO_INITIAL
+                away_rolling = {'avg_pts_scored': 0, 'avg_pts_allowed': 0, 'avg_fg_pct': 0,
+                               'avg_rebounds': 0, 'avg_assists': 0, 'avg_tov': 0, 'avg_plus_minus': 0}
+            away_offensive_rating = away_rolling.get('avg_pts_scored', 0)
+            away_defensive_rating = away_rolling.get('avg_pts_allowed', 0)
         
-        # Calculate offensive/defensive ratings (using rolling averages)
-        home_offensive_rating = home_rolling.get('avg_pts_scored', 0)
-        home_defensive_rating = home_rolling.get('avg_pts_allowed', 0)
-        away_offensive_rating = away_rolling.get('avg_pts_scored', 0)
-        away_defensive_rating = away_rolling.get('avg_pts_allowed', 0)
+        # Get H2H from training dataset
+        h2h_home, h2h_away = get_h2h_from_training_data(home_team_name, away_team_name, training_df, game_date)
+        
+        # Get rest days (fallback to default if not in database)
+        if home_team.team_id:
+            home_rest = get_days_rest(db, home_team.team_id, game_date)
+        else:
+            home_rest = 3  # Default
+        if away_team.team_id:
+            away_rest = get_days_rest(db, away_team.team_id, game_date)
+        else:
+            away_rest = 3  # Default
         
         # Create feature vector in team1 vs team2 format (team1 = home, team2 = away)
         # This matches the format used in training (is_home was removed)

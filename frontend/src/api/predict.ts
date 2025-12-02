@@ -1,12 +1,14 @@
+export interface PredictionResponse {
+  prediction: string;
+  home_win_probability: number;
+  away_win_probability: number;
+}
+
 export async function getPrediction(inputData: { 
-  teamPointsPerGame: number; 
-  opponentPointsPerGame: number;
-  fieldGoalPercentage: number;
-  threePointPercentage: number;
-  reboundsPerGame: number;
-  assistsPerGame: number;
-}) {
-  const response = await fetch("http://127.0.0.1:8000/predict", {
+  home_team_name: string;
+  away_team_name: string;
+}): Promise<PredictionResponse> {
+  const response = await fetch("http://localhost:8000/predict", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(inputData),
@@ -17,5 +19,5 @@ export async function getPrediction(inputData: {
   }
   
   const data = await response.json();
-  return data.prediction;
+  return data;
 }

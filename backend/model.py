@@ -41,3 +41,33 @@ def predict_outcome(features):
     """
     prediction = model.predict([features])[0]
     return prediction
+
+def predict_outcome_from_teams(home_team_name: str, away_team_name: str):
+    """
+    Predict basketball game outcome based on team names.
+    
+    Args:
+        home_team_name: Name of the home team (e.g., "Los Angeles Lakers")
+        away_team_name: Name of the away team (e.g., "Golden State Warriors")
+    
+    Returns:
+        1 for Win (home team), 0 for Loss (home team)
+    
+    Note: This is a placeholder implementation. Replace with actual team data lookup
+    and feature extraction from your database or data source.
+    """
+    # Placeholder: Simple prediction based on team names
+    # In a real implementation, you would:
+    # 1. Look up team statistics from a database
+    # 2. Extract features (points per game, FG%, etc.)
+    # 3. Call predict_outcome with those features
+    
+    # For now, return a simple deterministic prediction based on team name hash
+    # This ensures consistent results for the same team matchup
+    home_hash = hash(home_team_name) % 100
+    away_hash = hash(away_team_name) % 100
+    
+    # Simple prediction: home team wins if their hash is higher
+    prediction = 1 if home_hash > away_hash else 0
+    
+    return prediction

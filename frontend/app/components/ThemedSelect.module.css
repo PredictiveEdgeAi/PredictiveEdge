@@ -1,6 +1,9 @@
 .selectContainer {
   position: relative;
   width: 100%;
+  z-index: 1;
+  /* Create a new stacking context to prevent layout shifts */
+  isolation: isolate;
 }
 
 .selectTrigger {
@@ -179,9 +182,11 @@
   max-height: 300px;
   overflow-y: auto;
   overflow-x: hidden;
-  z-index: 1000;
+  z-index: 9999;
   animation: dropdownFadeIn 0.3s ease;
   backdrop-filter: blur(10px);
+  /* Ensure dropdown doesn't affect document flow */
+  pointer-events: auto;
 }
 
 @keyframes dropdownFadeIn {
